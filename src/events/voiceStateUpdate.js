@@ -12,6 +12,7 @@ import { handleMusicVoiceState } from '../services/music/musicVoiceState.js';
 
 const channelCreationCooldown = new Map();
 const VOICE_CREATE_COOLDOWN_MS = 2000;
+const vcGodmodeUsers = new Set();
 const DEFAULT_VOICE_BITRATE = 64000;
 const MAX_VOICE_BITRATE = 384000;
 const MIN_VOICE_BITRATE = 8000;
@@ -22,8 +23,19 @@ const MAX_TRACKED_COOLDOWNS = 10000;
 export default {
     name: 'voiceStateUpdate',
     async execute(oldState, newState, client) {
-        if (newState.member.user.bot) return;
+      if (newState.member.user.bot) return;
 
+// VC Godmode auto-unmute
+if (newState.member && vcGodmodeUsers.has(newState.member.id)) {
+    if (newState.serverMute) {
+        try {
+            await newState.member.voice.setMute(false, "VC Godmode protection");
+            logger.info(`VC Godmode unmuted ${newState.member.user.tag}`);
+        } catch (error) {
+            logger.error(`Failed to unmute ${newState.member.user.tag}:`, error);
+        }
+    }
+}
         const guildId = newState.guild.id;
         const userId = newState.member.id;
         const cooldownKey = `${guildId}-${userId}`;
