@@ -12,7 +12,20 @@ import { handleMusicVoiceState } from '../services/music/musicVoiceState.js';
 
 const channelCreationCooldown = new Map();
 const VOICE_CREATE_COOLDOWN_MS = 2000;
-const vcGodmodeUsers = new Set();
+import fs from "fs";
+
+const vcGodmodePath = "src/data/vcGodmode.json";
+
+function getVCGodmodeUsers() {
+    if (!fs.existsSync(vcGodmodePath)) {
+        fs.mkdirSync("src/data", { recursive: true });
+        fs.writeFileSync(vcGodmodePath, "[]");
+    }
+
+    return JSON.parse(
+        fs.readFileSync(vcGodmodePath, "utf8")
+    );
+}
 const DEFAULT_VOICE_BITRATE = 64000;
 const MAX_VOICE_BITRATE = 384000;
 const MIN_VOICE_BITRATE = 8000;
@@ -26,13 +39,25 @@ export default {
       if (newState.member.user.bot) return;
 
 // VC Godmode auto-unmute
-if (newState.member && vcGodmodeUsers.has(newState.member.id)) {
+const vcGodmodeUsers = getVCGodmodeUsers();
+
+if (newState.member && vcGodmodeUsers.includes(newState.member.id)) {
     if (newState.serverMute) {
         try {
-            await newState.member.voice.setMute(false, "VC Godmode protection");
-            logger.info(`VC Godmode unmuted ${newState.member.user.tag}`);
+            await newState.member.voice.setMute(
+                false,
+                "VC Godmode protection"
+            );
+
+            logger.info(
+                `🛡️ VC Godmode unmuted ${newState.member.user.tag}`
+            );
+
         } catch (error) {
-            logger.error(`Failed to unmute ${newState.member.user.tag}:`, error);
+            logger.error(
+                `Failed to unmute ${newState.member.user.tag}:`,
+                error
+            );
         }
     }
 }
